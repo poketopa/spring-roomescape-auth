@@ -5,17 +5,22 @@ public class User {
     private final Long id;
     private final String name;
     private final String email;
+    private final String password;
 
-    public User(Long id, String name, String email) {
+    public User(Long id, String name, String email, String password) {
         if (name == null || name.isBlank()) {
             throw new IllegalArgumentException("사용자 이름은 필수입니다.");
         }
         if (email == null || email.isBlank()) {
             throw new IllegalArgumentException("사용자 이메일은 필수입니다.");
         }
+        if (password == null || password.isBlank()) {
+            throw new IllegalArgumentException("사용자 비밀번호는 필수입니다.");
+        }
         this.id = id;
         this.name = name;
         this.email = email;
+        this.password = password;
     }
 
     public Long getId() {
@@ -28,5 +33,9 @@ public class User {
 
     public String getEmail() {
         return email;
+    }
+
+    public String getPassword() {
+        return password;
     }
 }

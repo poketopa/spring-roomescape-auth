@@ -25,7 +25,8 @@ public class ReservationDao {
         User user = new User(
                 resultSet.getLong("user_id"),
                 resultSet.getString("user_name"),
-                resultSet.getString("email")
+                resultSet.getString("email"),
+                resultSet.getString("password")
         );
 
         ReservationTime time = new ReservationTime(
@@ -56,7 +57,7 @@ public class ReservationDao {
     public Optional<Reservation> findById(Long id) {
         String sql = """
                 SELECT r.id, r.date,
-                       u.id as user_id, u.name as user_name, u.email,
+                       u.id as user_id, u.name as user_name, u.email, u.password,
                        t.id as time_id, t.start_at,
                        th.id as theme_id, th.name as theme_name, th.description, th.thumbnail_image_url
                 FROM reservation r
@@ -72,7 +73,7 @@ public class ReservationDao {
     public List<Reservation> findAll() {
         String sql = """
                 SELECT r.id, r.date,
-                       u.id as user_id, u.name as user_name, u.email,
+                       u.id as user_id, u.name as user_name, u.email, u.password,
                        t.id as time_id, t.start_at,
                        th.id as theme_id, th.name as theme_name, th.description, th.thumbnail_image_url
                 FROM reservation r
@@ -92,7 +93,7 @@ public class ReservationDao {
     public List<Reservation> findAllByUserId(Long userId) {
         String sql = """
                 SELECT r.id, r.date,
-                       u.id as user_id, u.name as user_name, u.email,
+                       u.id as user_id, u.name as user_name, u.email, u.password,
                        t.id as time_id, t.start_at,
                        th.id as theme_id, th.name as theme_name, th.description, th.thumbnail_image_url
                 FROM reservation r

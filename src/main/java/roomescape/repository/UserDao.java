@@ -13,7 +13,8 @@ public class UserDao {
     private final RowMapper<User> rowMapper = (resultSet, rowNum) -> new User(
             resultSet.getLong("id"),
             resultSet.getString("name"),
-            resultSet.getString("email")
+            resultSet.getString("email"),
+            resultSet.getString("password")
     );
 
     public UserDao(JdbcTemplate jdbcTemplate) {
@@ -21,7 +22,7 @@ public class UserDao {
     }
 
     public User findById(Long id) {
-        String sql = "SELECT id, name, email FROM users WHERE id = ?";
+        String sql = "SELECT id, name, email, password FROM users WHERE id = ?";
         return jdbcTemplate.queryForObject(sql, rowMapper, id);
     }
 }

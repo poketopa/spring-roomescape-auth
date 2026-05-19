@@ -1,5 +1,5 @@
-INSERT INTO users (id, name, email)
-VALUES (1, '예약자', 'user@test.com');
+INSERT INTO users (id, name, email, password)
+VALUES (1, '예약자', 'user@test.com', 'password1234');
 
 ALTER TABLE users
     ALTER COLUMN id RESTART WITH 10;
