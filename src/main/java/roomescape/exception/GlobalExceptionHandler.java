@@ -60,6 +60,12 @@ public class GlobalExceptionHandler {
         return new ErrorResponse(e.getErrorCode().getCode(), e.getMessage());
     }
 
+    @ExceptionHandler(DuplicateEmailException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public ErrorResponse handleDuplicateEmail(DuplicateEmailException e) {
+        return new ErrorResponse(ErrorCode.DUPLICATE_EMAIL.getCode(), e.getMessage());
+    }
+
     @ExceptionHandler(HttpMessageNotReadableException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ErrorResponse handleHttpMessageNotReadable(HttpMessageNotReadableException e) {
