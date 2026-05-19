@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <title>로그인 — RoomEscape</title>
+    <meta content="방탈출 예약 서비스 로그인 페이지" name="description">
+    <link href="style.css" rel="stylesheet">
+    <style>
+        .auth-page {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Background gradient blobs */
+        .auth-page::before {
+            content: '';
+            position: fixed;
+            top: -30%;
+            left: -20%;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(91, 127, 255, 0.12) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        .auth-page::after {
+            content: '';
+            position: fixed;
+            bottom: -20%;
+            right: -15%;
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, rgba(167, 139, 250, 0.1) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        .auth-container {
+            width: 100%;
+            max-width: 440px;
+            padding: 24px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .auth-logo {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .auth-logo-icon {
+            font-size: 48px;
+            display: block;
+            margin-bottom: 12px;
+            filter: drop-shadow(0 0 20px rgba(91, 127, 255, 0.4));
+        }
+
+        .auth-logo-text {
+            font-size: 28px;
+            font-weight: 800;
+            background: linear-gradient(135deg, #5b7fff, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -1px;
+        }
+
+        .auth-logo-sub {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-top: 6px;
+        }
+
+        .auth-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 36px;
+            box-shadow: var(--shadow-lg);
+        }
+
+        /* Tab switcher */
+        .auth-tabs {
+            display: flex;
+            background: var(--bg-input);
+            border-radius: var(--radius-sm);
+            padding: 4px;
+            margin-bottom: 32px;
+            gap: 4px;
+        }
+
+        .auth-tab {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 6px;
+            background: transparent;
+            color: var(--text-muted);
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+        }
+
+        .auth-tab.active {
+            background: var(--bg-card);
+            color: var(--accent);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+
+        /* Panel */
+        .auth-panel {
+            display: none;
+            animation: fadeIn 0.25s ease;
+        }
+
+        .auth-panel.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .auth-form-title {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+
+        .auth-form-sub {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 28px;
+        }
+
+        .auth-input-group {
+            position: relative;
+            margin-bottom: 16px;
+        }
+
+        .auth-input-group label {
+            display: block;
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-secondary);
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+            margin-bottom: 7px;
+        }
+
+        .auth-input-group input {
+            width: 100%;
+            padding: 13px 16px;
+            font-size: 15px;
+        }
+
+        .auth-btn {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-family: 'Inter', sans-serif;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .auth-btn-primary {
+            background: linear-gradient(135deg, #5b7fff, #7b5bff);
+            color: #fff;
+            box-shadow: 0 4px 20px rgba(91, 127, 255, 0.4);
+        }
+
+        .auth-btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 28px rgba(91, 127, 255, 0.55);
+        }
+
+        .auth-btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .auth-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .auth-divider {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin: 20px 0;
+            color: var(--text-muted);
+            font-size: 12px;
+        }
+
+        .auth-divider::before,
+        .auth-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+        }
+
+        .error-msg {
+            background: var(--danger-soft);
+            border: 1px solid rgba(255, 91, 127, 0.25);
+            color: var(--danger);
+            padding: 11px 14px;
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            margin-bottom: 16px;
+            display: none;
+        }
+
+        .error-msg.visible {
+            display: block;
+        }
+
+        .success-msg {
+            background: var(--success-soft);
+            border: 1px solid rgba(74, 222, 128, 0.25);
+            color: var(--success);
+            padding: 11px 14px;
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            margin-bottom: 16px;
+            display: none;
+        }
+
+        .success-msg.visible {
+            display: block;
+        }
+
+        .back-link {
+            display: block;
+            text-align: center;
+            margin-top: 24px;
+            color: var(--text-muted);
+            font-size: 13px;
+            text-decoration: none;
+            transition: color 0.18s;
+        }
+
+        .back-link:hover {
+            color: var(--text-secondary);
+        }
+
+        .input-hint {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        .loading-spinner {
+            width: 18px;
+            height: 18px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+            display: none;
+        }
+
+        .loading-spinner.visible {
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+<div class="auth-page">
+    <div class="auth-container">
+
+        <div class="auth-logo">
+            <span class="auth-logo-icon">🔐</span>
+            <div class="auth-logo-text">RoomEscape</div>
+            <div class="auth-logo-sub">방탈출 예약 플랫폼</div>
+        </div>
+
+        <div class="auth-card">
+
+            <!-- Tab Switcher -->
+            <div class="auth-tabs">
+                <button class="auth-tab active" id="tab-login" onclick="switchTab('login')">로그인</button>
+                <button class="auth-tab" id="tab-register" onclick="switchTab('register')">회원가입</button>
+            </div>
+
+            <!-- ── Login Panel ── -->
+            <div class="auth-panel active" id="panel-login">
+                <h1 class="auth-form-title">다시 오셨군요! 👋</h1>
+                <p class="auth-form-sub">이메일과 비밀번호로 로그인하세요.</p>
+
+                <div class="error-msg" id="login-error"></div>
+
+                <div class="auth-input-group">
+                    <label for="login-email">이메일</label>
+                    <input id="login-email" placeholder="user@example.com" type="email"
+                           onkeydown="if(event.key==='Enter') login()">
+                </div>
+
+                <div class="auth-input-group">
+                    <label for="login-password">비밀번호</label>
+                    <input id="login-password" placeholder="비밀번호를 입력하세요" type="password"
+                           onkeydown="if(event.key==='Enter') login()">
+                </div>
+
+                <button class="auth-btn auth-btn-primary" id="login-btn" onclick="login()">
+                    <span class="loading-spinner" id="login-spinner"></span>
+                    <span id="login-btn-text">🔑 로그인</span>
+                </button>
+
+                <div class="auth-divider">테스트 계정</div>
+                <div style="background: var(--bg-input); border-radius: var(--radius-sm); padding: 12px 16px; font-size: 13px;">
+                    <div style="color: var(--text-secondary);">이메일: <code style="color: var(--accent);">user@test.com</code></div>
+                    <div style="color: var(--text-secondary); margin-top: 4px;">비밀번호: <code style="color: var(--accent);">password1234</code></div>
+                </div>
+            </div>
+
+            <!-- ── Register Panel ── -->
+            <div class="auth-panel" id="panel-register">
+                <h2 class="auth-form-title">처음 오셨나요? 🎉</h2>
+                <p class="auth-form-sub">계정을 만들고 방탈출을 예약해보세요.</p>
+
+                <div class="error-msg" id="register-error"></div>
+                <div class="success-msg" id="register-success"></div>
+
+                <div class="auth-input-group">
+                    <label for="reg-name">이름</label>
+                    <input id="reg-name" placeholder="홍길동" type="text"
+                           onkeydown="if(event.key==='Enter') register()">
+                </div>
+
+                <div class="auth-input-group">
+                    <label for="reg-email">이메일</label>
+                    <input id="reg-email" placeholder="user@example.com" type="email"
+                           onkeydown="if(event.key==='Enter') register()">
+                </div>
+
+                <div class="auth-input-group">
+                    <label for="reg-password">비밀번호</label>
+                    <input id="reg-password" placeholder="8자 이상 입력하세요" type="password"
+                           onkeydown="if(event.key==='Enter') register()">
+                    <div class="input-hint">* 현재 회원가입 API가 없는 경우 관리자에게 문의하세요.</div>
+                </div>
+
+                <button class="auth-btn auth-btn-primary" id="register-btn" onclick="register()">
+                    <span class="loading-spinner" id="register-spinner"></span>
+                    <span id="register-btn-text">✨ 회원가입</span>
+                </button>
+            </div>
+
+        </div>
+
+        <a class="back-link" href="/">← 홈으로 돌아가기</a>
+    </div>
+</div>
+
+<div id="toast-container"></div>
+
+<script>
+    // ── Redirect if already logged in ─────────────────
+    (function () {
+        const token = localStorage.getItem('accessToken');
+        if (token) {
+            const redirect = new URLSearchParams(location.search).get('redirect') || '/';
+            location.href = redirect;
+        }
+    })();
+
+    // ── Tab Switching ─────────────────────────────────
+    function switchTab(tab) {
+        ['login', 'register'].forEach(t => {
+            document.getElementById(`tab-${t}`).classList.toggle('active', t === tab);
+            document.getElementById(`panel-${t}`).classList.toggle('active', t === tab);
+        });
+        clearErrors();
+    }
+
+    function clearErrors() {
+        ['login-error', 'register-error', 'register-success'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.classList.remove('visible');
+                el.textContent = '';
+            }
+        });
+    }
+
+    function showError(id, msg) {
+        const el = document.getElementById(id);
+        el.textContent = msg;
+        el.classList.add('visible');
+    }
+
+    function showSuccess(id, msg) {
+        const el = document.getElementById(id);
+        el.textContent = msg;
+        el.classList.add('visible');
+    }
+
+    // ── Toast ─────────────────────────────────────────
+    function toast(msg, type = 'info') {
+        const container = document.getElementById('toast-container');
+        const el = document.createElement('div');
+        const icon = type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️';
+        el.className = `toast toast-${type}`;
+        el.innerHTML = `<span>${icon}</span><span>${msg}</span>`;
+        container.appendChild(el);
+        setTimeout(() => el.remove(), 3500);
+    }
+
+    // ── API helper ────────────────────────────────────
+    async function apiFetch(method, url, body) {
+        const res = await fetch(url, {
+            method,
+            headers: {'Content-Type': 'application/json'},
+            body: body ? JSON.stringify(body) : undefined,
+        });
+        const ct = res.headers.get('Content-Type') || '';
+        const data = ct.includes('json') ? await res.json() : await res.text();
+        if (!res.ok) {
+            const msg = (typeof data === 'object' && data.message) ? data.message : (data || `HTTP ${res.status}`);
+            throw new Error(msg);
+        }
+        return data;
+    }
+
+    // ── Login ─────────────────────────────────────────
+    async function login() {
+        clearErrors();
+        const email = document.getElementById('login-email').value.trim();
+        const password = document.getElementById('login-password').value;
+
+        if (!email) { showError('login-error', '이메일을 입력해주세요.'); return; }
+        if (!password) { showError('login-error', '비밀번호를 입력해주세요.'); return; }
+
+        const btn = document.getElementById('login-btn');
+        const spinner = document.getElementById('login-spinner');
+        const btnText = document.getElementById('login-btn-text');
+
+        btn.disabled = true;
+        spinner.classList.add('visible');
+        btnText.textContent = '로그인 중...';
+
+        try {
+            const result = await apiFetch('POST', '/login', {email, password});
+            localStorage.setItem('accessToken', result.accessToken);
+            localStorage.setItem('loginEmail', email);
+            toast('로그인 성공! 환영합니다 🎉', 'success');
+
+            // Redirect
+            const redirect = new URLSearchParams(location.search).get('redirect') || '/';
+            setTimeout(() => { location.href = redirect; }, 600);
+        } catch (e) {
+            showError('login-error', `❌ ${e.message}`);
+            btn.disabled = false;
+            spinner.classList.remove('visible');
+            btnText.textContent = '🔑 로그인';
+        }
+    }
+
+    // ── Register ──────────────────────────────────────
+    async function register() {
+        clearErrors();
+        const name = document.getElementById('reg-name').value.trim();
+        const email = document.getElementById('reg-email').value.trim();
+        const password = document.getElementById('reg-password').value;
+
+        if (!name) { showError('register-error', '이름을 입력해주세요.'); return; }
+        if (!email) { showError('register-error', '이메일을 입력해주세요.'); return; }
+        if (!password || password.length < 4) { showError('register-error', '비밀번호는 4자 이상이어야 합니다.'); return; }
+
+        const btn = document.getElementById('register-btn');
+        const spinner = document.getElementById('register-spinner');
+        const btnText = document.getElementById('register-btn-text');
+
+        btn.disabled = true;
+        spinner.classList.add('visible');
+        btnText.textContent = '처리 중...';
+
+        try {
+            await apiFetch('POST', '/members', {name, email, password});
+            showSuccess('register-success', '✅ 회원가입이 완료되었습니다! 이제 로그인하세요.');
+            toast('회원가입 완료!', 'success');
+            // Pre-fill login form
+            document.getElementById('login-email').value = email;
+            setTimeout(() => switchTab('login'), 1500);
+        } catch (e) {
+            // 회원가입 API가 없을 수 있으므로 친절한 안내
+            if (e.message.includes('404') || e.message.includes('405')) {
+                showError('register-error', '현재 회원가입 기능이 지원되지 않습니다. 관리자에게 문의하세요.');
+            } else {
+                showError('register-error', `❌ ${e.message}`);
+            }
+        } finally {
+            btn.disabled = false;
+            spinner.classList.remove('visible');
+            btnText.textContent = '✨ 회원가입';
+        }
+    }
+
+    // ── Focus email on load ───────────────────────────
+    document.addEventListener('DOMContentLoaded', () => {
+        // URL 해시 기반 탭 자동 전환 (#register)
+        if (location.hash === '#register') {
+            switchTab('register');
+            document.getElementById('reg-name').focus();
+        } else {
+            document.getElementById('login-email').focus();
+        }
+    });
+</script>
+</body>
+</html>

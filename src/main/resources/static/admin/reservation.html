@@ -137,11 +137,20 @@
 
     async function api(method, url, body) {
         const opts = {method, headers: {'Content-Type': 'application/json'}};
+        const token = localStorage.getItem('accessToken');
+        if (token) opts.headers.Authorization = `Bearer ${token}`;
         if (body) opts.body = JSON.stringify(body);
         const res = await fetch(url, opts);
+        if (res.status === 401) {
+            toast('인증이 필요합니다. 로그인 페이지로 이동합니다.', 'error');
+            setTimeout(() => { location.href = '/login.html?redirect=/admin/reservation.html'; }, 1000);
+            throw new Error('인증 필요');
+        }
         if (!res.ok) {
             const text = await res.text().catch(() => '');
-            throw new Error(text || `HTTP ${res.status}`);
+            let msg = text;
+            try { const j = JSON.parse(text); if (j.message) msg = j.message; } catch (_) {}
+            throw new Error(msg || `HTTP ${res.status}`);
         }
         const ct = res.headers.get('Content-Type') || '';
         return ct.includes('json') ? res.json() : null;
@@ -167,7 +176,7 @@
             tbody.innerHTML = data.map(r => `
         <tr>
           <td><span class="badge badge-gray">#${r.id}</span></td>
-          <td><strong>${r.name}</strong></td>
+            <td><strong>${r.name ?? '알 수 없음'}</strong></td>
           <td>${r.theme ? `<span class="badge badge-blue">${r.theme.name || '–'}</span>` : '–'}</td>
           <td>${r.date}</td>
           <td>${r.time?.startAt ?? r.time ?? '–'}</td>
@@ -185,7 +194,7 @@
 
     async function loadThemes() {
         try {
-            const themes = await api('GET', '/admin/themes');
+            const themes = await api('GET', '/themes');
             const sel = document.getElementById('res-theme');
             sel.innerHTML = '<option value="">테마 선택</option>' +
                 themes.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
@@ -202,7 +211,7 @@
         // 날짜+테마가 모두 있으면 가용 시간 조회
         if (themeId && date) {
             try {
-                const times = await api('GET', `/admin/themes/${themeId}/times?date=${date}`);
+                const times = await api('GET', `/themes/${themeId}/times?date=${date}`);
                 sel.innerHTML = '<option value="">시간 선택</option>' +
                     times.map(t => `<option value="${t.id}" ${t.isReserved ? 'disabled' : ''}>${t.startAt}${t.isReserved ? ' (예약됨)' : ''}</option>`).join('');
                 return;

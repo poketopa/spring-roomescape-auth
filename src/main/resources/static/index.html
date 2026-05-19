@@ -200,13 +200,8 @@
     <!-- Top Nav -->
     <nav class="top-nav">
         <div class="top-nav-logo">🔐 RoomEscape</div>
-        <div class="top-nav-links">
-            <input id="login-email" placeholder="email" style="width:180px;" type="email">
-            <input id="login-password" placeholder="password" style="width:140px;" type="password">
-            <button class="btn btn-primary btn-sm" onclick="login()">로그인</button>
-            <button class="btn btn-ghost btn-sm" onclick="logout()">로그아웃</button>
-            <a class="btn btn-ghost btn-sm" href="/my.html">내 예약</a>
-            <a class="btn btn-ghost btn-sm" href="/admin/reservation.html">🛠 관리자</a>
+        <div class="top-nav-links" id="nav-links">
+            <!-- 동적으로 채워짐 -->
         </div>
     </nav>
 
@@ -355,69 +350,66 @@
     async function api(method, url, body) {
         const opts = {method, headers: {'Content-Type': 'application/json'}};
         const token = localStorage.getItem('accessToken');
-        if (token) {
-            opts.headers.Authorization = `Bearer ${token}`;
-        }
+        if (token) opts.headers.Authorization = `Bearer ${token}`;
         if (body) opts.body = JSON.stringify(body);
         const res = await fetch(url, opts);
         if (res.status === 401) {
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('loginEmail');
+            renderNav();
             throw new Error('로그인이 필요합니다.');
         }
         if (!res.ok) {
             const text = await res.text().catch(() => '');
             let errorMsg = text;
-            try {
-                const json = JSON.parse(text);
-                if (json.message) errorMsg = json.message;
-            } catch (e) {
-            }
+            try { const j = JSON.parse(text); if (j.message) errorMsg = j.message; } catch (_) {}
             throw new Error(errorMsg || `HTTP ${res.status}`);
         }
         const ct = res.headers.get('Content-Type') || '';
         return ct.includes('json') ? res.json() : null;
     }
 
-    function updateSummary() {
-        const setVal = (id, val) => {
-            const el = document.getElementById(id);
-            if (val) {
-                el.textContent = val;
-                el.classList.remove('empty');
-            } else {
-                el.textContent = '–';
-                el.classList.add('empty');
-            }
-        };
-        setVal('sum-theme', state.selectedTheme?.name);
-        setVal('sum-date', state.selectedDate);
-        setVal('sum-time', state.selectedTime?.startAt);
-        setVal('sum-name', localStorage.getItem('loginEmail'));
-    }
-
-    async function login() {
-        const email = document.getElementById('login-email').value;
-        const password = document.getElementById('login-password').value;
-        if (!email || !password) {
-            toast('이메일과 비밀번호를 입력해주세요.', 'error');
-            return;
-        }
-
-        try {
-            const result = await api('POST', '/login', {email, password});
-            localStorage.setItem('accessToken', result.accessToken);
-            localStorage.setItem('loginEmail', email);
-            toast('로그인 성공', 'success');
-            updateSummary();
-        } catch (e) {
-            toast(`로그인 실패: ${e.message}`, 'error');
+    // ── Nav rendering ─────────────────────────────────
+    function renderNav() {
+        const nav = document.getElementById('nav-links');
+        const isLoggedIn = !!localStorage.getItem('accessToken');
+        const email = localStorage.getItem('loginEmail');
+        if (isLoggedIn) {
+            nav.innerHTML = `
+                <span style="font-size:13px;color:var(--text-secondary);display:flex;align-items:center;gap:6px;">
+                    <span style="width:8px;height:8px;background:var(--success);border-radius:50%;display:inline-block;"></span>
+                    ${email || '로그인됨'}
+                </span>
+                <a class="btn btn-ghost btn-sm" href="/my.html">📋 내 예약</a>
+                <a class="btn btn-ghost btn-sm" href="/admin/reservation.html">🛠 관리자</a>
+                <button class="btn btn-ghost btn-sm" onclick="logout()">로그아웃</button>
+            `;
+        } else {
+            nav.innerHTML = `
+                <a class="btn btn-ghost btn-sm" href="/login.html">로그인</a>
+                <a class="btn btn-primary btn-sm" href="/login.html#register">회원가입</a>
+            `;
         }
     }
 
     function logout() {
         localStorage.removeItem('accessToken');
         localStorage.removeItem('loginEmail');
+        renderNav();
         updateSummary();
         toast('로그아웃되었습니다.', 'info');
+    }
+
+    function updateSummary() {
+        const setVal = (id, val) => {
+            const el = document.getElementById(id);
+            if (val) { el.textContent = val; el.classList.remove('empty'); }
+            else { el.textContent = '–'; el.classList.add('empty'); }
+        };
+        setVal('sum-theme', state.selectedTheme?.name);
+        setVal('sum-date', state.selectedDate);
+        setVal('sum-time', state.selectedTime?.startAt);
+        setVal('sum-name', localStorage.getItem('loginEmail'));
     }
 
     // ── Step navigation ────────────────────────────────
@@ -602,11 +594,9 @@
 
     // ── Init ─────────────────────────────────────────
     document.addEventListener('DOMContentLoaded', () => {
+        renderNav();
         loadThemes();
         document.getElementById('book-date').value = new Date().toISOString().split('T')[0];
-        if (localStorage.getItem('loginEmail')) {
-            document.getElementById('login-email').value = localStorage.getItem('loginEmail');
-        }
         updateSummary();
     });
 </script>

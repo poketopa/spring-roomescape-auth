@@ -112,11 +112,20 @@
 
     async function api(method, url, body) {
         const opts = {method, headers: {'Content-Type': 'application/json'}};
+        const token = localStorage.getItem('accessToken');
+        if (token) opts.headers.Authorization = `Bearer ${token}`;
         if (body) opts.body = JSON.stringify(body);
         const res = await fetch(url, opts);
+        if (res.status === 401) {
+            toast('인증이 필요합니다. 로그인 페이지로 이동합니다.', 'error');
+            setTimeout(() => { location.href = '/login.html?redirect=/admin/time.html'; }, 1000);
+            throw new Error('인증 필요');
+        }
         if (!res.ok) {
             const text = await res.text().catch(() => '');
-            throw new Error(text || `HTTP ${res.status}`);
+            let msg = text;
+            try { const j = JSON.parse(text); if (j.message) msg = j.message; } catch (_) {}
+            throw new Error(msg || `HTTP ${res.status}`);
         }
         const ct = res.headers.get('Content-Type') || '';
         return ct.includes('json') ? res.json() : null;

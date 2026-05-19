@@ -197,11 +197,20 @@
 
     async function api(method, url, body) {
         const opts = {method, headers: {'Content-Type': 'application/json'}};
+        const token = localStorage.getItem('accessToken');
+        if (token) opts.headers.Authorization = `Bearer ${token}`;
         if (body) opts.body = JSON.stringify(body);
         const res = await fetch(url, opts);
+        if (res.status === 401) {
+            toast('인증이 필요합니다. 로그인 페이지로 이동합니다.', 'error');
+            setTimeout(() => { location.href = '/login.html?redirect=/admin/theme.html'; }, 1000);
+            throw new Error('인증 필요');
+        }
         if (!res.ok) {
             const text = await res.text().catch(() => '');
-            throw new Error(text || `HTTP ${res.status}`);
+            let msg = text;
+            try { const j = JSON.parse(text); if (j.message) msg = j.message; } catch (_) {}
+            throw new Error(msg || `HTTP ${res.status}`);
         }
         const ct = res.headers.get('Content-Type') || '';
         return ct.includes('json') ? res.json() : null;
@@ -215,7 +224,7 @@
     // ── Load Themes ────────────────────────────────────
     async function loadThemes() {
         try {
-            const data = await api('GET', '/admin/themes');
+            const data = await api('GET', '/themes');
             document.getElementById('theme-count').textContent = data.length;
 
             // Update dropdown for time check
@@ -262,7 +271,7 @@
         const container = document.getElementById('popular-list');
         container.innerHTML = `<div class="empty-state"><div class="spinner"></div></div>`;
         try {
-            const data = await api('GET', `/admin/themes/popular?limit=${limit}`);
+            const data = await api('GET', `/themes/popular?limit=${limit}`);
             if (!data.length) {
                 container.innerHTML = `<div class="empty-state"><div class="empty-icon">📊</div><p>데이터가 없습니다.</p></div>`;
                 return;
@@ -309,7 +318,7 @@
         const container = document.getElementById('time-slots');
         container.innerHTML = `<div class="empty-state"><div class="spinner"></div></div>`;
         try {
-            const data = await api('GET', `/admin/themes/${themeId}/times?date=${date}`);
+            const data = await api('GET', `/themes/${themeId}/times?date=${date}`);
             if (!data.length) {
                 container.innerHTML = `<div class="empty-state"><div class="empty-icon">⏰</div><p>등록된 시간이 없습니다.</p></div>`;
                 return;
