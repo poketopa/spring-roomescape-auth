@@ -52,7 +52,8 @@ public class ThemeTest {
     void 예약된_시간은_isReserved_true() {
         insertTheme();
         jdbcTemplate.execute("INSERT INTO reservation_time(start_at) VALUES ('10:00:00')");
-        jdbcTemplate.update("INSERT INTO users(name, email) VALUES (?, ?)", "홍길동", "hong@test.com");
+        jdbcTemplate.update("INSERT INTO users(name, email, password) VALUES (?, ?, ?)",
+                "홍길동", "hong@test.com", "password1234");
         jdbcTemplate.update(
                 "INSERT INTO reservation(user_id, theme_id, date, time_id) VALUES (1, 1, '2026-05-06', 1)");
 

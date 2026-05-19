@@ -20,18 +20,47 @@ public class ReservationPolicyTest {
     private JdbcTemplate jdbcTemplate;
 
     @Test
+    void 미로그인_예약_생성_시_401_반환() {
+        Map<String, Object> params = new HashMap<>();
+        params.put("themeId", 1);
+        params.put("date", "2030-08-05");
+        params.put("timeId", 1);
+
+        RestAssured.given().log().all()
+                .contentType(ContentType.JSON)
+                .body(params)
+                .when().post("/reservations")
+                .then().log().all()
+                .statusCode(401)
+                .body("code", equalTo("AUTHENTICATION_REQUIRED"))
+                .body("message", equalTo("인증이 필요합니다."));
+    }
+
+    @Test
+    void 잘못된_토큰_요청_시_401_반환() {
+        RestAssured.given().log().all()
+                .header("Authorization", "Bearer invalid-token")
+                .when().get("/reservations/my")
+                .then().log().all()
+                .statusCode(401)
+                .body("code", equalTo("INVALID_TOKEN"))
+                .body("message", equalTo("유효하지 않은 토큰입니다."));
+    }
+
+    @Test
     void 과거_날짜_예약_시도_시_400_반환() {
         insertUser(1L, "브라운", "brown@test.com");
         insertTheme(1L, "테마명");
         insertReservationTime(1L, "10:00:00");
+        String accessToken = login("brown@test.com", "password1234");
 
         Map<String, Object> params = new HashMap<>();
-        params.put("userId", 1);
         params.put("date", "2020-01-01");  // 과거 날짜
         params.put("timeId", 1);
         params.put("themeId", 1);
 
         RestAssured.given().log().all()
+                .header("Authorization", "Bearer " + accessToken)
                 .contentType(ContentType.JSON)
                 .body(params)
                 .when().post("/reservations")
@@ -43,20 +72,23 @@ public class ReservationPolicyTest {
 
     @Test
     void 잘못된_입력값_예약_시도_시_400_반환() {
+        insertUser(1L, "브라운", "brown@test.com");
+        String accessToken = login("brown@test.com", "password1234");
+
         Map<String, Object> params = new HashMap<>();
-        params.put("userId", null);  // null userId
+        params.put("themeId", null);
         params.put("date", "2030-08-05");
         params.put("timeId", 1);
-        params.put("themeId", 1);
 
         RestAssured.given().log().all()
+                .header("Authorization", "Bearer " + accessToken)
                 .contentType(ContentType.JSON)
                 .body(params)
                 .when().post("/reservations")
                 .then().log().all()
                 .statusCode(400)
                 .body("code", equalTo("INVALID_INPUT"))
-                .body("message", equalTo("사용자 ID는 필수입니다."));
+                .body("message", equalTo("테마 ID는 필수입니다."));
     }
 
     @Test
@@ -81,15 +113,17 @@ public class ReservationPolicyTest {
         insertReservationTime(1L, "10:00:00");
         insertReservationTime(2L, "14:00:00");
         insertReservation(1L, 1L, "2030-08-05", 1L);
+        String accessToken = login("brown@test.com", "password1234");
 
         Map<String, Object> params = new HashMap<>();
         params.put("date", "2030-09-10");
         params.put("timeId", 2);
 
         RestAssured.given().log().all()
+                .header("Authorization", "Bearer " + accessToken)
                 .contentType(ContentType.JSON)
                 .body(params)
-                .when().patch("/reservations/1?userId=1")
+                .when().patch("/reservations/1")
                 .then().log().all()
                 .statusCode(200)
                 .body("date", equalTo("2030-09-10"))
@@ -104,15 +138,17 @@ public class ReservationPolicyTest {
         insertReservationTime(1L, "10:00:00");
         insertReservationTime(2L, "14:00:00");
         insertReservation(1L, 1L, "2030-08-05", 1L);  // userId=1의 예약
+        String accessToken = login("hong@test.com", "password1234");
 
         Map<String, Object> params = new HashMap<>();
         params.put("date", "2030-09-10");
         params.put("timeId", 2);
 
         RestAssured.given().log().all()
+                .header("Authorization", "Bearer " + accessToken)
                 .contentType(ContentType.JSON)
                 .body(params)
-                .when().patch("/reservations/1?userId=2")  // userId=2가 변경 시도
+                .when().patch("/reservations/1")
                 .then().log().all()
                 .statusCode(403)
                 .body("code", equalTo("UNAUTHORIZED_RESERVATION"))
@@ -124,15 +160,17 @@ public class ReservationPolicyTest {
         insertUser(1L, "브라운", "brown@test.com");
         insertTheme(1L, "테마명");
         insertReservationTime(1L, "10:00:00");
+        String accessToken = login("brown@test.com", "password1234");
 
         Map<String, Object> params = new HashMap<>();
         params.put("date", "2030-09-10");
         params.put("timeId", 1);
 
         RestAssured.given().log().all()
+                .header("Authorization", "Bearer " + accessToken)
                 .contentType(ContentType.JSON)
                 .body(params)
-                .when().patch("/reservations/999?userId=1")  // 존재하지 않는 예약 ID
+                .when().patch("/reservations/999")  // 존재하지 않는 예약 ID
                 .then().log().all()
                 .statusCode(404)
                 .body("code", equalTo("RESERVATION_NOT_FOUND"))
@@ -145,15 +183,17 @@ public class ReservationPolicyTest {
         insertTheme(1L, "테마명");
         insertReservationTime(1L, "10:00:00");
         insertReservation(1L, 1L, "2030-08-05", 1L);
+        String accessToken = login("brown@test.com", "password1234");
 
         Map<String, Object> params = new HashMap<>();
         params.put("date", "2020-01-01");  // 과거 날짜로 변경 시도
         params.put("timeId", 1);
 
         RestAssured.given().log().all()
+                .header("Authorization", "Bearer " + accessToken)
                 .contentType(ContentType.JSON)
                 .body(params)
-                .when().patch("/reservations/1?userId=1")
+                .when().patch("/reservations/1")
                 .then().log().all()
                 .statusCode(400)
                 .body("code", equalTo("PAST_RESERVATION"))
@@ -168,15 +208,17 @@ public class ReservationPolicyTest {
         insertReservationTime(1L, "10:00:00");
         insertReservation(1L, 1L, "2030-08-05", 1L);  // userId=1, 10:00
         insertReservation(2L, 1L, "2030-09-10", 1L);  // userId=2, 10:00 (타겟 날짜 이미 예약)
+        String accessToken = login("brown@test.com", "password1234");
 
         Map<String, Object> params = new HashMap<>();
         params.put("date", "2030-09-10");
         params.put("timeId", 1);  // 이미 예약된 날짜+시간+테마
 
         RestAssured.given().log().all()
+                .header("Authorization", "Bearer " + accessToken)
                 .contentType(ContentType.JSON)
                 .body(params)
-                .when().patch("/reservations/1?userId=1")
+                .when().patch("/reservations/1")
                 .then().log().all()
                 .statusCode(409)
                 .body("code", equalTo("DUPLICATE_RESERVATION"))
@@ -191,15 +233,17 @@ public class ReservationPolicyTest {
         insertReservationTime(2L, "14:00:00");
         // 과거 날짜로 예약 강제 삽입
         insertReservation(1L, 1L, "2020-01-01", 1L);
+        String accessToken = login("brown@test.com", "password1234");
 
         Map<String, Object> params = new HashMap<>();
         params.put("date", "2030-09-10"); // 변경하려는 날짜는 미래라도
         params.put("timeId", 2);
 
         RestAssured.given().log().all()
+                .header("Authorization", "Bearer " + accessToken)
                 .contentType(ContentType.JSON)
                 .body(params)
-                .when().patch("/reservations/1?userId=1")
+                .when().patch("/reservations/1")
                 .then().log().all()
                 .statusCode(400)
                 .body("code", equalTo("PAST_RESERVATION"))
@@ -212,9 +256,11 @@ public class ReservationPolicyTest {
         insertTheme(1L, "테마명");
         insertReservationTime(1L, "10:00:00");
         insertReservation(1L, 1L, "2020-01-01", 1L);
+        String accessToken = login("brown@test.com", "password1234");
 
         RestAssured.given().log().all()
-                .when().delete("/reservations/1?userId=1")
+                .header("Authorization", "Bearer " + accessToken)
+                .when().delete("/reservations/1")
                 .then().log().all()
                 .statusCode(400)
                 .body("code", equalTo("PAST_RESERVATION"))
@@ -222,7 +268,8 @@ public class ReservationPolicyTest {
     }
 
     private void insertUser(Long id, String name, String email) {
-        jdbcTemplate.update("INSERT INTO users(id, name, email) VALUES (?, ?, ?)", id, name, email);
+        jdbcTemplate.update("INSERT INTO users(id, name, email, password) VALUES (?, ?, ?, ?)",
+                id, name, email, "password1234");
     }
 
     private void insertTheme(Long id, String name) {
@@ -238,5 +285,21 @@ public class ReservationPolicyTest {
     private void insertReservation(Long userId, Long themeId, String date, Long timeId) {
         jdbcTemplate.update("INSERT INTO reservation(user_id, theme_id, date, time_id) VALUES (?, ?, ?, ?)",
                 userId, themeId, date, timeId);
+    }
+
+    private String login(String email, String password) {
+        Map<String, Object> loginRequest = new HashMap<>();
+        loginRequest.put("email", email);
+        loginRequest.put("password", password);
+
+        return RestAssured.given().log().all()
+                .contentType(ContentType.JSON)
+                .body(loginRequest)
+                .when().post("/login")
+                .then().log().all()
+                .statusCode(200)
+                .extract()
+                .jsonPath()
+                .getString("accessToken");
     }
 }

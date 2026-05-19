@@ -15,9 +15,12 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import roomescape.auth.AuthenticatedMember;
+import roomescape.auth.LoginMember;
+import roomescape.auth.LoginRequired;
 import roomescape.domain.Reservation;
+import roomescape.dto.CreateMyReservationRequest;
 import roomescape.dto.CreateReservationRequest;
 import roomescape.dto.ReservationResponse;
 import roomescape.dto.UpdateReservationRequest;
@@ -26,6 +29,7 @@ import roomescape.service.ReservationService;
 @Tag(name = "사용자 - 예약 관리", description = "사용자용 예약 생성·내 예약 조회·삭제 API")
 @RestController
 @RequestMapping("/reservations")
+@LoginRequired
 public class ReservationController {
 
     private final ReservationService reservationService;
@@ -34,13 +38,12 @@ public class ReservationController {
         this.reservationService = reservationService;
     }
 
-    @Operation(summary = "내 예약 목록 조회", description = "사용자 ID에 해당하는 예약 목록을 반환합니다.")
+    @Operation(summary = "내 예약 목록 조회", description = "로그인한 사용자의 예약 목록을 반환합니다.")
     @ApiResponse(responseCode = "200", description = "내 예약 목록 조회 성공")
     @GetMapping("/my")
     public ResponseEntity<List<ReservationResponse>> readMyReservations(
-            @Parameter(description = "사용자 ID", example = "1")
-            @RequestParam Long userId) {
-        return ResponseEntity.ok(reservationService.getMyReservations(userId).stream()
+            @LoginMember AuthenticatedMember loginMember) {
+        return ResponseEntity.ok(reservationService.getMyReservations(loginMember.id()).stream()
                 .map(ReservationResponse::from)
                 .toList());
     }
@@ -52,8 +55,15 @@ public class ReservationController {
     })
     @PostMapping
     public ResponseEntity<Void> createReservation(
-            @RequestBody CreateReservationRequest createReservationRequest) {
-        Reservation createdReservation = reservationService.createReservation(createReservationRequest);
+            @LoginMember AuthenticatedMember loginMember,
+            @RequestBody CreateMyReservationRequest request) {
+        CreateReservationRequest loginMemberReservationRequest = new CreateReservationRequest(
+                loginMember.id(),
+                request.themeId(),
+                request.date(),
+                request.timeId()
+        );
+        Reservation createdReservation = reservationService.createReservation(loginMemberReservationRequest);
 
         URI location = URI.create("/reservations/" + createdReservation.getId());
         return ResponseEntity.created(location).build();
@@ -70,9 +80,9 @@ public class ReservationController {
     @PatchMapping("/{id}")
     public ResponseEntity<ReservationResponse> updateReservation(
             @Parameter(description = "변경할 예약 ID", example = "1") @PathVariable Long id,
-            @Parameter(description = "요청자 사용자 ID", example = "1") @RequestParam Long userId,
+            @LoginMember AuthenticatedMember loginMember,
             @RequestBody UpdateReservationRequest request) {
-        Reservation updatedReservation = reservationService.updateReservation(id, userId, request);
+        Reservation updatedReservation = reservationService.updateReservation(id, loginMember.id(), request);
         return ResponseEntity.ok(ReservationResponse.from(updatedReservation));
     }
 
@@ -86,9 +96,8 @@ public class ReservationController {
     public ResponseEntity<Void> deleteReservation(
             @Parameter(description = "삭제할 예약 ID", example = "1")
             @PathVariable Long id,
-            @Parameter(description = "요청자 사용자 ID", example = "1")
-            @RequestParam Long userId) {
-        reservationService.deleteMyReservation(id, userId);
+            @LoginMember AuthenticatedMember loginMember) {
+        reservationService.deleteMyReservation(id, loginMember.id());
         return ResponseEntity.noContent().build();
     }
 }

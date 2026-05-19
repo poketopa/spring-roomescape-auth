@@ -98,6 +98,7 @@
     <nav class="top-nav">
         <div class="top-nav-logo" onclick="location.href='/'" style="cursor:pointer;">🔐 RoomEscape</div>
         <div class="top-nav-links">
+            <button class="btn btn-ghost btn-sm" onclick="logout()">로그아웃</button>
             <a class="btn btn-ghost btn-sm" href="/">예약하기</a>
         </div>
     </nav>
@@ -105,16 +106,10 @@
     <main class="user-main">
         <h1 style="font-size: 28px; margin-bottom: 24px;">내 예약 조회</h1>
         <div class="card">
-            <div style="display: flex; gap: 8px; align-items: flex-end; margin-bottom: 24px;">
-                <div class="form-group" style="flex:1;">
-                    <label>사용자 ID</label>
-                    <input id="user-id" placeholder="사용자 ID를 입력하세요" type="number">
-                </div>
-                <button class="btn btn-primary" onclick="loadMyReservations()">조회</button>
-            </div>
+            <button class="btn btn-primary" onclick="loadMyReservations()" style="margin-bottom: 24px;">조회</button>
 
             <div id="reservation-list">
-                <div class="empty-state"><p>사용자 ID를 입력하고 조회해주세요.</p></div>
+                <div class="empty-state"><p>로그인 후 조회 버튼을 눌러주세요.</p></div>
             </div>
         </div>
     </main>
@@ -164,8 +159,15 @@
 
     async function api(method, url, body) {
         const opts = {method, headers: {'Content-Type': 'application/json'}};
+        const token = localStorage.getItem('accessToken');
+        if (token) {
+            opts.headers.Authorization = `Bearer ${token}`;
+        }
         if (body) opts.body = JSON.stringify(body);
         const res = await fetch(url, opts);
+        if (res.status === 401) {
+            throw new Error('로그인이 필요합니다.');
+        }
         if (!res.ok) {
             const text = await res.text().catch(() => '');
             let errorMsg = text;
@@ -182,9 +184,8 @@
     }
 
     async function loadMyReservations() {
-        const userId = document.getElementById('user-id').value;
-        if (!userId) {
-            toast('사용자 ID를 입력해주세요.', 'error');
+        if (!localStorage.getItem('accessToken')) {
+            toast('로그인 후 이용해주세요.', 'error');
             return;
         }
 
@@ -192,7 +193,7 @@
         container.innerHTML = '<div class="empty-state"><div class="spinner"></div></div>';
 
         try {
-            const res = await api('GET', `/reservations/my?userId=${userId}`);
+            const res = await api('GET', '/reservations/my');
             if (!res || res.length === 0) {
                 container.innerHTML = '<div class="empty-state"><p>예약 내역이 없습니다.</p></div>';
                 return;
@@ -218,9 +219,8 @@
 
     async function cancelReservation(resId) {
         if (!confirm('정말로 예약을 취소하시겠습니까?')) return;
-        const userId = document.getElementById('user-id').value;
         try {
-            await api('DELETE', `/reservations/${resId}?userId=${userId}`);
+            await api('DELETE', `/reservations/${resId}`);
             toast('예약이 취소되었습니다.', 'success');
             loadMyReservations();
         } catch (e) {
@@ -268,7 +268,6 @@
 
     async function submitModify() {
         const resId = document.getElementById('mod-res-id').value;
-        const userId = document.getElementById('user-id').value;
         const date = document.getElementById('mod-date').value;
         const timeId = document.getElementById('mod-time').value;
 
@@ -278,13 +277,19 @@
         }
 
         try {
-            await api('PATCH', `/reservations/${resId}?userId=${userId}`, {date, timeId: Number(timeId)});
+            await api('PATCH', `/reservations/${resId}`, {date, timeId: Number(timeId)});
             toast('예약이 변경되었습니다.', 'success');
             closeModal();
             loadMyReservations();
         } catch (e) {
             toast(`변경 실패: ${e.message}`, 'error');
         }
+    }
+
+    function logout() {
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('loginEmail');
+        toast('로그아웃되었습니다.', 'info');
     }
 </script>
 </body>

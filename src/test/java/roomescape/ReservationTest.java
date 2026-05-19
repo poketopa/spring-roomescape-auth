@@ -26,14 +26,15 @@ public class ReservationTest {
         insertUser(1L, "브라운", "brown@test.com");
         insertTheme(1L, "테마명");
         insertReservationTime(1L, "10:00");
+        String accessToken = login("brown@test.com", "password1234");
 
         Map<String, Object> params = new HashMap<>();
-        params.put("userId", 1);
         params.put("date", "2030-08-05");
         params.put("timeId", 1);
         params.put("themeId", 1);
 
         RestAssured.given().log().all()
+                .header("Authorization", "Bearer " + accessToken)
                 .contentType(ContentType.JSON)
                 .body(params)
                 .when().post("/reservations")
@@ -41,18 +42,21 @@ public class ReservationTest {
                 .statusCode(201);
 
         RestAssured.given().log().all()
-                .when().get("/reservations/my?userId=1")
+                .header("Authorization", "Bearer " + accessToken)
+                .when().get("/reservations/my")
                 .then().log().all()
                 .statusCode(200)
                 .body("size()", is(1));
 
         RestAssured.given().log().all()
-                .when().delete("/reservations/1?userId=1")
+                .header("Authorization", "Bearer " + accessToken)
+                .when().delete("/reservations/1")
                 .then().log().all()
                 .statusCode(204);
 
         RestAssured.given().log().all()
-                .when().get("/reservations/my?userId=1")
+                .header("Authorization", "Bearer " + accessToken)
+                .when().get("/reservations/my")
                 .then().log().all()
                 .statusCode(200)
                 .body("size()", is(0));
@@ -63,14 +67,15 @@ public class ReservationTest {
         insertUser(1L, "브라운", "brown@test.com");
         insertTheme(1L, "테마명");
         insertReservationTime(1L, "10:00");
+        String accessToken = login("brown@test.com", "password1234");
 
         Map<String, Object> params = new HashMap<>();
-        params.put("userId", 1);
         params.put("date", "2030-08-05");
         params.put("timeId", 1);
         params.put("themeId", 1);
 
         RestAssured.given().log().all()
+                .header("Authorization", "Bearer " + accessToken)
                 .contentType(ContentType.JSON)
                 .body(params)
                 .when().post("/reservations")
@@ -81,7 +86,8 @@ public class ReservationTest {
                 .isEqualTo(1);
 
         RestAssured.given().log().all()
-                .when().delete("/reservations/1?userId=1")
+                .header("Authorization", "Bearer " + accessToken)
+                .when().delete("/reservations/1")
                 .then().log().all()
                 .statusCode(204);
 
@@ -94,14 +100,15 @@ public class ReservationTest {
         insertUser(1L, "브라운", "brown@test.com");
         insertTheme(1L, "테마명");
         insertReservationTime(1L, "10:00");
+        String accessToken = login("brown@test.com", "password1234");
 
         Map<String, Object> reservation = new HashMap<>();
-        reservation.put("userId", 1);
         reservation.put("date", "2030-08-05");
         reservation.put("timeId", 1);
         reservation.put("themeId", 1);
 
         RestAssured.given().log().all()
+                .header("Authorization", "Bearer " + accessToken)
                 .contentType(ContentType.JSON)
                 .body(reservation)
                 .when().post("/reservations")
@@ -109,7 +116,8 @@ public class ReservationTest {
                 .statusCode(201);
 
         RestAssured.given().log().all()
-                .when().get("/reservations/my?userId=1")
+                .header("Authorization", "Bearer " + accessToken)
+                .when().get("/reservations/my")
                 .then().log().all()
                 .statusCode(200)
                 .body("size()", is(1));
@@ -121,14 +129,15 @@ public class ReservationTest {
         insertTheme(1L, "테마명");
         insertReservationTime(1L, "10:00:00");
         insertReservation(1L, 1L, "2030-08-05", 1L);
+        String accessToken = login("hong@test.com", "password1234");
 
         Map<String, Object> params = new HashMap<>();
-        params.put("userId", 1);
         params.put("date", "2030-08-05");
         params.put("timeId", 1);
         params.put("themeId", 1);
 
         RestAssured.given().log().all()
+                .header("Authorization", "Bearer " + accessToken)
                 .contentType(ContentType.JSON)
                 .body(params)
                 .when().post("/reservations")
@@ -145,9 +154,11 @@ public class ReservationTest {
         insertTheme(1L, "테마명");
         insertReservationTime(1L, "10:00:00");
         insertReservation(1L, 1L, "2026-05-06", 1L);
+        String accessToken = login("brown@test.com", "password1234");
 
         RestAssured.given().log().all()
-                .when().delete("/reservations/1?userId=2")
+                .header("Authorization", "Bearer " + accessToken)
+                .when().delete("/reservations/1")
                 .then().log().all()
                 .statusCode(403)
                 .body("code", equalTo("UNAUTHORIZED_RESERVATION"))
@@ -155,7 +166,8 @@ public class ReservationTest {
     }
 
     private void insertUser(Long id, String name, String email) {
-        jdbcTemplate.update("INSERT INTO users(id, name, email) VALUES (?, ?, ?)", id, name, email);
+        jdbcTemplate.update("INSERT INTO users(id, name, email, password) VALUES (?, ?, ?, ?)",
+                id, name, email, "password1234");
     }
 
     private void insertTheme(Long id, String name) {
@@ -171,5 +183,21 @@ public class ReservationTest {
     private void insertReservation(Long userId, Long themeId, String date, Long timeId) {
         jdbcTemplate.update("INSERT INTO reservation(user_id, theme_id, date, time_id) VALUES (?, ?, ?, ?)",
                 userId, themeId, date, timeId);
+    }
+
+    private String login(String email, String password) {
+        Map<String, Object> loginRequest = new HashMap<>();
+        loginRequest.put("email", email);
+        loginRequest.put("password", password);
+
+        return RestAssured.given().log().all()
+                .contentType(ContentType.JSON)
+                .body(loginRequest)
+                .when().post("/login")
+                .then().log().all()
+                .statusCode(200)
+                .extract()
+                .jsonPath()
+                .getString("accessToken");
     }
 }

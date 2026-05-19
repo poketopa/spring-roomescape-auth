@@ -1,5 +1,6 @@
 package roomescape.repository;
 
+import java.util.Optional;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
@@ -24,5 +25,10 @@ public class UserDao {
     public User findById(Long id) {
         String sql = "SELECT id, name, email, password FROM users WHERE id = ?";
         return jdbcTemplate.queryForObject(sql, rowMapper, id);
+    }
+
+    public Optional<User> findByEmail(String email) {
+        String sql = "SELECT id, name, email, password FROM users WHERE email = ?";
+        return jdbcTemplate.query(sql, rowMapper, email).stream().findFirst();
     }
 }

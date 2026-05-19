@@ -54,6 +54,12 @@ public class GlobalExceptionHandler {
         return new ErrorResponse(ErrorCode.UNAUTHORIZED_RESERVATION.getCode(), e.getMessage());
     }
 
+    @ExceptionHandler(AuthenticationException.class)
+    @ResponseStatus(HttpStatus.UNAUTHORIZED)
+    public ErrorResponse handleAuthentication(AuthenticationException e) {
+        return new ErrorResponse(e.getErrorCode().getCode(), e.getMessage());
+    }
+
     @ExceptionHandler(HttpMessageNotReadableException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ErrorResponse handleHttpMessageNotReadable(HttpMessageNotReadableException e) {

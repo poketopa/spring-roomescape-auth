@@ -201,6 +201,10 @@
     <nav class="top-nav">
         <div class="top-nav-logo">🔐 RoomEscape</div>
         <div class="top-nav-links">
+            <input id="login-email" placeholder="email" style="width:180px;" type="email">
+            <input id="login-password" placeholder="password" style="width:140px;" type="password">
+            <button class="btn btn-primary btn-sm" onclick="login()">로그인</button>
+            <button class="btn btn-ghost btn-sm" onclick="logout()">로그아웃</button>
             <a class="btn btn-ghost btn-sm" href="/my.html">내 예약</a>
             <a class="btn btn-ghost btn-sm" href="/admin/reservation.html">🛠 관리자</a>
         </div>
@@ -317,11 +321,6 @@
                      style="margin-bottom: 24px; display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
                 </div>
 
-                <div class="form-group" style="margin-bottom: 20px;">
-                    <label for="book-user-id">사용자 ID</label>
-                    <input id="book-user-id" min="1" placeholder="1" style="max-width: 300px;" type="number">
-                </div>
-
                 <button class="btn btn-primary btn-full" onclick="submitReservation()" style="max-width: 300px;">
                     🎟 예약 확정
                 </button>
@@ -355,8 +354,15 @@
 
     async function api(method, url, body) {
         const opts = {method, headers: {'Content-Type': 'application/json'}};
+        const token = localStorage.getItem('accessToken');
+        if (token) {
+            opts.headers.Authorization = `Bearer ${token}`;
+        }
         if (body) opts.body = JSON.stringify(body);
         const res = await fetch(url, opts);
+        if (res.status === 401) {
+            throw new Error('로그인이 필요합니다.');
+        }
         if (!res.ok) {
             const text = await res.text().catch(() => '');
             let errorMsg = text;
@@ -385,7 +391,33 @@
         setVal('sum-theme', state.selectedTheme?.name);
         setVal('sum-date', state.selectedDate);
         setVal('sum-time', state.selectedTime?.startAt);
-        setVal('sum-name', document.getElementById('book-user-id')?.value ? `User #${document.getElementById('book-user-id').value}` : null);
+        setVal('sum-name', localStorage.getItem('loginEmail'));
+    }
+
+    async function login() {
+        const email = document.getElementById('login-email').value;
+        const password = document.getElementById('login-password').value;
+        if (!email || !password) {
+            toast('이메일과 비밀번호를 입력해주세요.', 'error');
+            return;
+        }
+
+        try {
+            const result = await api('POST', '/login', {email, password});
+            localStorage.setItem('accessToken', result.accessToken);
+            localStorage.setItem('loginEmail', email);
+            toast('로그인 성공', 'success');
+            updateSummary();
+        } catch (e) {
+            toast(`로그인 실패: ${e.message}`, 'error');
+        }
+    }
+
+    function logout() {
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('loginEmail');
+        updateSummary();
+        toast('로그아웃되었습니다.', 'info');
     }
 
     // ── Step navigation ────────────────────────────────
@@ -539,9 +571,8 @@
 
     // ── Reservation CRUD ──────────────────────────────
     async function submitReservation() {
-        const userId = Number(document.getElementById('book-user-id').value);
-        if (!userId) {
-            toast('사용자 ID를 입력해주세요.', 'error');
+        if (!localStorage.getItem('accessToken')) {
+            toast('로그인이 필요합니다.', 'error');
             return;
         }
         if (!state.selectedTheme || !state.selectedDate || !state.selectedTime) {
@@ -551,7 +582,6 @@
 
         try {
             await api('POST', '/reservations', {
-                userId,
                 date: state.selectedDate,
                 themeId: state.selectedTheme.id,
                 timeId: state.selectedTime.id,
@@ -561,7 +591,6 @@
             state.selectedTheme = null;
             state.selectedDate = null;
             state.selectedTime = null;
-            document.getElementById('book-user-id').value = '';
             updateSummary();
             goToStep(1);
             await loadThemes();
@@ -572,10 +601,13 @@
 
 
     // ── Init ─────────────────────────────────────────
-    document.getElementById('book-user-id').addEventListener('input', updateSummary);
     document.addEventListener('DOMContentLoaded', () => {
         loadThemes();
         document.getElementById('book-date').value = new Date().toISOString().split('T')[0];
+        if (localStorage.getItem('loginEmail')) {
+            document.getElementById('login-email').value = localStorage.getItem('loginEmail');
+        }
+        updateSummary();
     });
 </script>
 </body>

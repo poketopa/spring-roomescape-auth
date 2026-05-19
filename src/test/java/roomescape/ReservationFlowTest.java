@@ -24,6 +24,7 @@ public class ReservationFlowTest {
         insertUser(1L, "브라운", "brown@test.com");
         insertTheme(1L, "테마명");
         insertReservationTime(1L, "10:00:00");
+        String accessToken = login("brown@test.com", "password1234");
 
         RestAssured.given().log().all()
                 .when().get("/themes/1/times?date=2030-05-06")
@@ -32,11 +33,11 @@ public class ReservationFlowTest {
                 .body("[0].isReserved", equalTo(false));
 
         Map<String, Object> params = new HashMap<>();
-        params.put("userId", 1);
         params.put("date", "2030-05-06");
         params.put("timeId", 1);
         params.put("themeId", 1);
         RestAssured.given().log().all()
+                .header("Authorization", "Bearer " + accessToken)
                 .contentType(ContentType.JSON)
                 .body(params)
                 .when().post("/reservations")
@@ -51,7 +52,8 @@ public class ReservationFlowTest {
     }
 
     private void insertUser(Long id, String name, String email) {
-        jdbcTemplate.update("INSERT INTO users(id, name, email) VALUES (?, ?, ?)", id, name, email);
+        jdbcTemplate.update("INSERT INTO users(id, name, email, password) VALUES (?, ?, ?, ?)",
+                id, name, email, "password1234");
     }
 
     private void insertTheme(Long id, String name) {
@@ -62,5 +64,21 @@ public class ReservationFlowTest {
 
     private void insertReservationTime(Long id, String startAt) {
         jdbcTemplate.update("INSERT INTO reservation_time(id, start_at) VALUES (?, ?)", id, startAt);
+    }
+
+    private String login(String email, String password) {
+        Map<String, Object> loginRequest = new HashMap<>();
+        loginRequest.put("email", email);
+        loginRequest.put("password", password);
+
+        return RestAssured.given().log().all()
+                .contentType(ContentType.JSON)
+                .body(loginRequest)
+                .when().post("/login")
+                .then().log().all()
+                .statusCode(200)
+                .extract()
+                .jsonPath()
+                .getString("accessToken");
     }
 }

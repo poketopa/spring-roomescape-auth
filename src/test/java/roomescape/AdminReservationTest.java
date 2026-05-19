@@ -77,7 +77,8 @@ public class AdminReservationTest {
 
 
     private void insertUser(Long id, String name, String email) {
-        jdbcTemplate.update("INSERT INTO users(id, name, email) VALUES (?, ?, ?)", id, name, email);
+        jdbcTemplate.update("INSERT INTO users(id, name, email, password) VALUES (?, ?, ?, ?)",
+                id, name, email, "password1234");
     }
 
     private void insertTheme(Long id, String name) {
