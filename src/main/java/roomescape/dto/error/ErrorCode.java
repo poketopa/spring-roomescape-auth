@@ -1,0 +1,24 @@
+package roomescape.dto.error;
+
+public enum ErrorCode {
+
+    INVALID_INPUT("INVALID_INPUT"),
+    PAST_RESERVATION("PAST_RESERVATION"),
+    DUPLICATE_RESERVATION("DUPLICATE_RESERVATION"),
+    RESERVATION_NOT_FOUND("RESERVATION_NOT_FOUND"),
+    RESERVATION_TIME_NOT_FOUND("RESERVATION_TIME_NOT_FOUND"),
+    RESERVATION_TIME_IN_USE("RESERVATION_TIME_IN_USE"),
+    UNAUTHORIZED_RESERVATION("UNAUTHORIZED_RESERVATION"),
+    INVALID_REQUEST_FORMAT("INVALID_REQUEST_FORMAT"),
+    INTERNAL_SERVER_ERROR("INTERNAL_SERVER_ERROR");
+
+    private final String code;
+
+    ErrorCode(final String code) {
+        this.code = code;
+    }
+
+    public String getCode() {
+        return code;
+    }
+}
