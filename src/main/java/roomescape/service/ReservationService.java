@@ -6,26 +6,32 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 import roomescape.domain.Reservation;
 import roomescape.domain.ReservationTime;
+import roomescape.domain.User;
 import roomescape.dto.CreateReservationRequest;
 import roomescape.dto.UpdateReservationRequest;
 import roomescape.exception.DuplicateReservationException;
+import roomescape.exception.ForbiddenException;
 import roomescape.exception.PastReservationException;
 import roomescape.exception.ReservationNotFoundException;
 import roomescape.exception.ReservationTimeNotFoundException;
 import roomescape.exception.UnauthorizedReservationException;
 import roomescape.repository.ReservationDao;
 import roomescape.repository.ReservationTimeDao;
+import roomescape.repository.UserDao;
 
 @Service
 public class ReservationService {
 
     private final ReservationDao reservationDao;
     private final ReservationTimeDao reservationTimeDao;
+    private final UserDao userDao;
     private final Clock clock;
 
-    public ReservationService(ReservationDao reservationDao, ReservationTimeDao reservationTimeDao, Clock clock) {
+    public ReservationService(ReservationDao reservationDao, ReservationTimeDao reservationTimeDao,
+                              UserDao userDao, Clock clock) {
         this.reservationDao = reservationDao;
         this.reservationTimeDao = reservationTimeDao;
+        this.userDao = userDao;
         this.clock = clock;
     }
 
@@ -74,6 +80,34 @@ public class ReservationService {
         if (!reservation.getUser().getId().equals(userId)) {
             throw new UnauthorizedReservationException("본인의 예약만 변경할 수 있습니다.");
         }
+        return performUpdate(reservation, reservationId, request);
+    }
+
+    public List<Reservation> getStoreReservations(Long managerId) {
+        User manager = userDao.findById(managerId);
+        validateManagerRole(manager);
+        return reservationDao.findAllByStoreId(manager.getStoreId());
+    }
+
+    /** 매장 매니저가 자기 매장의 예약을 변경한다. */
+    public Reservation updateStoreReservation(Long reservationId, Long managerId, UpdateReservationRequest request) {
+        User manager = userDao.findById(managerId);
+        Reservation reservation = reservationDao.findById(reservationId)
+                .orElseThrow(() -> new ReservationNotFoundException("존재하지 않는 예약입니다."));
+        validateManagerStoreAccess(manager, reservation);
+        return performUpdate(reservation, reservationId, request);
+    }
+
+    public void deleteStoreReservation(Long reservationId, Long managerId) {
+        User manager = userDao.findById(managerId);
+        Reservation reservation = reservationDao.findById(reservationId)
+                .orElseThrow(() -> new ReservationNotFoundException("존재하지 않는 예약입니다."));
+        validateManagerStoreAccess(manager, reservation);
+        checkNotPastReservation(reservation);
+        reservationDao.deleteById(reservationId);
+    }
+
+    private Reservation performUpdate(Reservation reservation, Long reservationId, UpdateReservationRequest request) {
         checkNotPastReservation(reservation);
 
         ReservationTime time = reservationTimeDao.findById(request.timeId())
@@ -92,6 +126,20 @@ public class ReservationService {
         reservationDao.updateDateAndTime(reservationId, request.date(), request.timeId());
         return reservationDao.findById(reservationId)
                 .orElseThrow(() -> new ReservationNotFoundException("존재하지 않는 예약입니다."));
+    }
+
+    private void validateManagerRole(User manager) {
+        if (!manager.isManager() || manager.getStoreId() == null) {
+            throw new ForbiddenException("매장 관리자 권한이 없습니다.");
+        }
+    }
+
+    private void validateManagerStoreAccess(User manager, Reservation reservation) {
+        validateManagerRole(manager);
+        Long reservationStoreId = reservation.getTheme().getStoreId();
+        if (!manager.getStoreId().equals(reservationStoreId)) {
+            throw new ForbiddenException("해당 매장의 예약에 접근할 권한이 없습니다.");
+        }
     }
 
     private void checkNotPastReservation(Reservation reservation) {

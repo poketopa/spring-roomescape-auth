@@ -18,13 +18,15 @@ public class ThemeDao {
     private final JdbcTemplate jdbcTemplate;
 
     private final RowMapper<Theme> rowMapper = (resultSet, rowNum) -> {
-        Theme theme = new Theme(
+        long rawStoreId = resultSet.getLong("store_id");
+        Long storeId = resultSet.wasNull() ? null : rawStoreId;
+        return new Theme(
                 resultSet.getLong("id"),
                 resultSet.getString("name"),
                 resultSet.getString("description"),
-                resultSet.getString("thumbnail_image_url")
+                resultSet.getString("thumbnail_image_url"),
+                storeId
         );
-        return theme;
     };
 
     public ThemeDao(JdbcTemplate jdbcTemplate) {
@@ -32,12 +34,12 @@ public class ThemeDao {
     }
 
     public List<Theme> findAll() {
-        String sql = "select id, name, description, thumbnail_image_url from theme";
+        String sql = "SELECT id, name, description, thumbnail_image_url, store_id FROM theme";
         return jdbcTemplate.query(sql, rowMapper);
     }
 
     public Theme findById(Long id) {
-        String sql = "select id, name, description, thumbnail_image_url from theme where id = ?";
+        String sql = "SELECT id, name, description, thumbnail_image_url, store_id FROM theme WHERE id = ?";
         return jdbcTemplate.queryForObject(sql, rowMapper, id);
     }
 

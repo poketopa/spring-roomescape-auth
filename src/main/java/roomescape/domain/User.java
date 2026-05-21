@@ -6,8 +6,14 @@ public class User {
     private final String name;
     private final String email;
     private final String password;
+    private final String role;
+    private final Long storeId;
 
     public User(Long id, String name, String email, String password) {
+        this(id, name, email, password, "USER", null);
+    }
+
+    public User(Long id, String name, String email, String password, String role, Long storeId) {
         if (name == null || name.isBlank()) {
             throw new IllegalArgumentException("사용자 이름은 필수입니다.");
         }
@@ -21,6 +27,12 @@ public class User {
         this.name = name;
         this.email = email;
         this.password = password;
+        this.role = role != null ? role : "USER";
+        this.storeId = storeId;
+    }
+
+    public boolean isManager() {
+        return "MANAGER".equals(role);
     }
 
     public Long getId() {
@@ -37,5 +49,13 @@ public class User {
 
     public String getPassword() {
         return password;
+    }
+
+    public String getRole() {
+        return role;
+    }
+
+    public Long getStoreId() {
+        return storeId;
     }
 }

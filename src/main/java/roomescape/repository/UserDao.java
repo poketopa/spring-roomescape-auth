@@ -1,5 +1,6 @@
 package roomescape.repository;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -14,12 +15,18 @@ public class UserDao {
     private final JdbcTemplate jdbcTemplate;
     private final SimpleJdbcInsert jdbcInsert;
 
-    private final RowMapper<User> rowMapper = (resultSet, rowNum) -> new User(
-            resultSet.getLong("id"),
-            resultSet.getString("name"),
-            resultSet.getString("email"),
-            resultSet.getString("password")
-    );
+    private final RowMapper<User> rowMapper = (resultSet, rowNum) -> {
+        long rawStoreId = resultSet.getLong("store_id");
+        Long storeId = resultSet.wasNull() ? null : rawStoreId;
+        return new User(
+                resultSet.getLong("id"),
+                resultSet.getString("name"),
+                resultSet.getString("email"),
+                resultSet.getString("password"),
+                resultSet.getString("role"),
+                storeId
+        );
+    };
 
     public UserDao(JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
@@ -29,12 +36,12 @@ public class UserDao {
     }
 
     public User findById(Long id) {
-        String sql = "SELECT id, name, email, password FROM users WHERE id = ?";
+        String sql = "SELECT id, name, email, password, role, store_id FROM users WHERE id = ?";
         return jdbcTemplate.queryForObject(sql, rowMapper, id);
     }
 
     public Optional<User> findByEmail(String email) {
-        String sql = "SELECT id, name, email, password FROM users WHERE email = ?";
+        String sql = "SELECT id, name, email, password, role, store_id FROM users WHERE email = ?";
         return jdbcTemplate.query(sql, rowMapper, email).stream().findFirst();
     }
 
@@ -45,11 +52,15 @@ public class UserDao {
     }
 
     public User save(User user) {
-        Number key = jdbcInsert.executeAndReturnKey(Map.of(
-                "name", user.getName(),
-                "email", user.getEmail(),
-                "password", user.getPassword()
-        ));
-        return new User(key.longValue(), user.getName(), user.getEmail(), user.getPassword());
+        Map<String, Object> params = new HashMap<>();
+        params.put("name", user.getName());
+        params.put("email", user.getEmail());
+        params.put("password", user.getPassword());
+        params.put("role", user.getRole());
+        params.put("store_id", user.getStoreId());
+
+        Number key = jdbcInsert.executeAndReturnKey(params);
+        return new User(key.longValue(), user.getName(), user.getEmail(), user.getPassword(),
+                user.getRole(), user.getStoreId());
     }
 }

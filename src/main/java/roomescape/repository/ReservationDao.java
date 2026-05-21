@@ -34,11 +34,15 @@ public class ReservationDao {
                 resultSet.getTime("start_at").toLocalTime()
         );
 
+        long rawThemeStoreId = resultSet.getLong("theme_store_id");
+        Long themeStoreId = resultSet.wasNull() ? null : rawThemeStoreId;
+
         Theme theme = new Theme(
                 resultSet.getLong("theme_id"),
                 resultSet.getString("theme_name"),
                 resultSet.getString("description"),
-                resultSet.getString("thumbnail_image_url")
+                resultSet.getString("thumbnail_image_url"),
+                themeStoreId
         );
 
         return new Reservation(
@@ -59,7 +63,8 @@ public class ReservationDao {
                 SELECT r.id, r.date,
                        u.id as user_id, u.name as user_name, u.email, u.password,
                        t.id as time_id, t.start_at,
-                       th.id as theme_id, th.name as theme_name, th.description, th.thumbnail_image_url
+                       th.id as theme_id, th.name as theme_name, th.description, th.thumbnail_image_url,
+                       th.store_id as theme_store_id
                 FROM reservation r
                 JOIN users u ON r.user_id = u.id
                 JOIN reservation_time t ON r.time_id = t.id
@@ -75,7 +80,8 @@ public class ReservationDao {
                 SELECT r.id, r.date,
                        u.id as user_id, u.name as user_name, u.email, u.password,
                        t.id as time_id, t.start_at,
-                       th.id as theme_id, th.name as theme_name, th.description, th.thumbnail_image_url
+                       th.id as theme_id, th.name as theme_name, th.description, th.thumbnail_image_url,
+                       th.store_id as theme_store_id
                 FROM reservation r
                 JOIN users u ON r.user_id = u.id
                 JOIN reservation_time t ON r.time_id = t.id
@@ -95,7 +101,8 @@ public class ReservationDao {
                 SELECT r.id, r.date,
                        u.id as user_id, u.name as user_name, u.email, u.password,
                        t.id as time_id, t.start_at,
-                       th.id as theme_id, th.name as theme_name, th.description, th.thumbnail_image_url
+                       th.id as theme_id, th.name as theme_name, th.description, th.thumbnail_image_url,
+                       th.store_id as theme_store_id
                 FROM reservation r
                 JOIN users u ON r.user_id = u.id
                 JOIN reservation_time t ON r.time_id = t.id
@@ -103,6 +110,22 @@ public class ReservationDao {
                 WHERE r.user_id = ?
                 """;
         return jdbcTemplate.query(sql, rowMapper, userId);
+    }
+
+    public List<Reservation> findAllByStoreId(Long storeId) {
+        String sql = """
+                SELECT r.id, r.date,
+                       u.id as user_id, u.name as user_name, u.email, u.password,
+                       t.id as time_id, t.start_at,
+                       th.id as theme_id, th.name as theme_name, th.description, th.thumbnail_image_url,
+                       th.store_id as theme_store_id
+                FROM reservation r
+                JOIN users u ON r.user_id = u.id
+                JOIN reservation_time t ON r.time_id = t.id
+                JOIN theme th ON r.theme_id = th.id
+                WHERE th.store_id = ?
+                """;
+        return jdbcTemplate.query(sql, rowMapper, storeId);
     }
 
     public Long save(CreateReservationRequest request) {

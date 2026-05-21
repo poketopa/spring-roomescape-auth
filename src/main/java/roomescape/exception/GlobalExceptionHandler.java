@@ -60,6 +60,12 @@ public class GlobalExceptionHandler {
         return new ErrorResponse(e.getErrorCode().getCode(), e.getMessage());
     }
 
+    @ExceptionHandler(ForbiddenException.class)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    public ErrorResponse handleForbidden(ForbiddenException e) {
+        return new ErrorResponse(ErrorCode.FORBIDDEN.getCode(), e.getMessage());
+    }
+
     @ExceptionHandler(DuplicateEmailException.class)
     @ResponseStatus(HttpStatus.CONFLICT)
     public ErrorResponse handleDuplicateEmail(DuplicateEmailException e) {

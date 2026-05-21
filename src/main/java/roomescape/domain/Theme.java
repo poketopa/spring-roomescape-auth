@@ -7,7 +7,13 @@ public class Theme {
     private final String description;
     private final String thumbnailImageUrl;
 
+    private final Long storeId;
+
     public Theme(Long id, String name, String description, String thumbnailImageUrl) {
+        this(id, name, description, thumbnailImageUrl, null);
+    }
+
+    public Theme(Long id, String name, String description, String thumbnailImageUrl, Long storeId) {
         if (name == null || name.isBlank()) {
             throw new IllegalArgumentException("테마 이름은 필수입니다.");
         }
@@ -18,6 +24,7 @@ public class Theme {
         this.name = name;
         this.description = description;
         this.thumbnailImageUrl = thumbnailImageUrl;
+        this.storeId = storeId;
     }
 
     public Long getId() {
@@ -34,5 +41,9 @@ public class Theme {
 
     public String getThumbnailImageUrl() {
         return thumbnailImageUrl;
+    }
+
+    public Long getStoreId() {
+        return storeId;
     }
 }
