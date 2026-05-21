@@ -1,25 +1,33 @@
-INSERT INTO users (id, name, email, password)
-VALUES (1, '예약자', 'user@test.com', 'password1234');
+INSERT INTO store (id, name)
+VALUES (1, '우테코 매장 A'),
+       (2, '우테코 매장 B');
+
+ALTER TABLE store
+    ALTER COLUMN id RESTART WITH 10;
+
+INSERT INTO users (id, name, email, password, role, store_id)
+VALUES (1, '예약자', 'user@test.com', 'password1234', 'USER', NULL),
+       (2, '매니저A', 'manager@test.com', 'password1234', 'MANAGER', 1);
 
 ALTER TABLE users
     ALTER COLUMN id RESTART WITH 10;
 
-INSERT INTO theme (id, name, description, thumbnail_image_url)
-VALUES (1, '우테코 방탈출', '우테코 시그니처 테마입니다.', 'https://example.com/thumbnails/theme1.png'),
-       (2, '저주받은 인형', '공포 장르 테마입니다.', 'https://example.com/thumbnails/theme2.png'),
-       (3, '미스터리 살인사건', '추리 장르 테마입니다.', 'https://example.com/thumbnails/theme3.png'),
-       (4, '우주 탐험', '우주 배경 SF 테마입니다.', 'https://example.com/thumbnails/theme4.png'),
-       (5, '중세 성의 비밀', '중세 판타지 테마입니다.', 'https://example.com/thumbnails/theme5.png'),
-       (6, '마법사의 탑', '마법 세계 테마입니다.', 'https://example.com/thumbnails/theme6.png'),
-       (7, '좀비 아포칼립스', '좀비 서바이벌 테마입니다.', 'https://example.com/thumbnails/theme7.png'),
-       (8, '탐정 사무소', '노아르 추리 테마입니다.', 'https://example.com/thumbnails/theme8.png'),
-       (9, '해저 탐험', '심해 탐험 테마입니다.', 'https://example.com/thumbnails/theme9.png'),
-       (10, '시간 여행', '타임루프 테마입니다.', 'https://example.com/thumbnails/theme10.png'),
-       (11, '지하 던전', '다크 판타지 테마입니다.', 'https://example.com/thumbnails/theme11.png'),
-       (12, '마피아 하우스', '사회적 추리 테마입니다.', 'https://example.com/thumbnails/theme12.png'),
-       (13, '빙하 기지', '빙하 SF 테마입니다.', 'https://example.com/thumbnails/theme13.png'),
-       (14, '화산 탈출', '재난 탈출 테마입니다.', 'https://example.com/thumbnails/theme14.png'),
-       (15, '사막의 신전', '고대 문명 테마입니다.', 'https://example.com/thumbnails/theme15.png');
+INSERT INTO theme (id, name, description, thumbnail_image_url, store_id)
+VALUES (1, '우테코 방탈출', '우테코 시그니처 테마입니다.', 'https://example.com/thumbnails/theme1.png', 1),
+       (2, '저주받은 인형', '공포 장르 테마입니다.', 'https://example.com/thumbnails/theme2.png', 1),
+       (3, '미스터리 살인사건', '추리 장르 테마입니다.', 'https://example.com/thumbnails/theme3.png', 1),
+       (4, '우주 탐험', '우주 배경 SF 테마입니다.', 'https://example.com/thumbnails/theme4.png', 1),
+       (5, '중세 성의 비밀', '중세 판타지 테마입니다.', 'https://example.com/thumbnails/theme5.png', 1),
+       (6, '마법사의 탑', '마법 세계 테마입니다.', 'https://example.com/thumbnails/theme6.png', 1),
+       (7, '좀비 아포칼립스', '좀비 서바이벌 테마입니다.', 'https://example.com/thumbnails/theme7.png', 1),
+       (8, '탐정 사무소', '노아르 추리 테마입니다.', 'https://example.com/thumbnails/theme8.png', 1),
+       (9, '해저 탐험', '심해 탐험 테마입니다.', 'https://example.com/thumbnails/theme9.png', 2),
+       (10, '시간 여행', '타임루프 테마입니다.', 'https://example.com/thumbnails/theme10.png', 2),
+       (11, '지하 던전', '다크 판타지 테마입니다.', 'https://example.com/thumbnails/theme11.png', 2),
+       (12, '마피아 하우스', '사회적 추리 테마입니다.', 'https://example.com/thumbnails/theme12.png', 2),
+       (13, '빙하 기지', '빙하 SF 테마입니다.', 'https://example.com/thumbnails/theme13.png', 2),
+       (14, '화산 탈출', '재난 탈출 테마입니다.', 'https://example.com/thumbnails/theme14.png', 2),
+       (15, '사막의 신전', '고대 문명 테마입니다.', 'https://example.com/thumbnails/theme15.png', 2);
 
 ALTER TABLE theme
     ALTER COLUMN id RESTART WITH 20;
